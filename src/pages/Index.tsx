@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
-// Pizza modal types
 interface Pizza {
   id: number;
   name: string;
@@ -11,6 +10,32 @@ interface Pizza {
   veg: boolean;
   desc?: string;
 }
+
+interface CartItem {
+  pizza: Pizza;
+  qty: number;
+  sizeLabel: string;
+  crustLabel: string;
+  totalPrice: number;
+}
+
+interface Addon {
+  id: string;
+  name: string;
+  sub: string;
+  price: number;
+  img: string;
+}
+
+const ADDON_IMG_1 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/dd17f16e-4426-4239-8bcf-a3d7b7a13e81.jpg";
+const ADDON_IMG_2 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/012e5de2-e4df-44cc-858c-feb1191313cc.jpg";
+const ADDON_IMG_3 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/a468602b-aba3-4ba0-94e4-29bdabad6f46.jpg";
+
+const ADDONS: Addon[] = [
+  { id: "cola", name: "Добрый Кола", sub: "0,5 л", price: 135, img: ADDON_IMG_1 },
+  { id: "cake", name: "Чизкейк Нью-Йорк", sub: "100 г", price: 199, img: ADDON_IMG_2 },
+  { id: "cocoa", name: "Какао", sub: "0,3 л", price: 139, img: ADDON_IMG_3 },
+];
 
 const SIZES = [
   { label: "20 см", scale: 0.72, priceAdd: 0 },
@@ -25,7 +50,7 @@ const CRUSTS = [
   { label: "Сырный борт", emoji: "🧀" },
 ];
 
-function PizzaModal({ pizza, onClose, onAdd }: { pizza: Pizza; onClose: () => void; onAdd: (id: number) => void }) {
+function PizzaModal({ pizza, onClose, onAdd }: { pizza: Pizza; onClose: () => void; onAdd: (id: number, sizeLabel: string, crustLabel: string, price: number) => void }) {
   const [sizeIdx, setSizeIdx] = useState(1);
   const [crustIdx, setCrustIdx] = useState(0);
   const [adding, setAdding] = useState(false);
@@ -35,7 +60,7 @@ function PizzaModal({ pizza, onClose, onAdd }: { pizza: Pizza; onClose: () => vo
 
   const handleAdd = () => {
     setAdding(true);
-    onAdd(pizza.id);
+    onAdd(pizza.id, size.label, CRUSTS[crustIdx].label, totalPrice);
     setTimeout(() => {
       setAdding(false);
       onClose();
@@ -158,6 +183,163 @@ function PizzaModal({ pizza, onClose, onAdd }: { pizza: Pizza; onClose: () => vo
   );
 }
 
+function CartScreen({
+  items, onClose, onChangeQty, onClear, onAddonAdd, addons
+}: {
+  items: CartItem[];
+  onClose: () => void;
+  onChangeQty: (pizzaId: number, delta: number) => void;
+  onClear: () => void;
+  onAddonAdd: (addon: Addon) => void;
+  addons: { addon: Addon; qty: number }[];
+}) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  const pizzaTotal = items.reduce((s, i) => s + i.totalPrice * i.qty, 0);
+  const addonTotal = addons.reduce((s, a) => s + a.addon.price * a.qty, 0);
+  const total = pizzaTotal + addonTotal;
+  const isEmpty = items.length === 0 && addons.length === 0;
+
+  return (
+    <div className="fixed inset-0 z-[100] max-w-md mx-auto animate-modal-up" style={{ background: "#141414" }}>
+      <div className="h-full flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-10 pb-3">
+          <button onClick={onClose}>
+            <Icon name="X" size={24} className="text-[hsl(14,100%,57%)]" />
+          </button>
+          <span className="text-lg font-rubik font-bold">Корзина</span>
+          {!isEmpty && (
+            <button onClick={onClear}>
+              <Icon name="Trash2" size={22} className="text-[hsl(14,100%,57%)]" />
+            </button>
+          )}
+          {isEmpty && <div className="w-6" />}
+        </div>
+
+        {/* Address bar */}
+        <div className="mx-4 mb-4 flex items-center gap-3 bg-[#1c1c1c] rounded-2xl px-4 py-3">
+          <span className="text-[hsl(14,100%,57%)]">🚶</span>
+          <span className="text-sm font-semibold flex-1">ул. Ленина, 42</span>
+          <Icon name="ChevronRight" size={18} className="text-[#555]" />
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+
+          {isEmpty && (
+            <div className="flex flex-col items-center justify-center h-60 text-center">
+              <span className="text-5xl mb-4">🛒</span>
+              <p className="text-lg font-semibold text-[#888]">Корзина пуста</p>
+              <p className="text-sm text-[#555] mt-1">Добавьте пиццу из меню</p>
+            </div>
+          )}
+
+          {/* Cart items */}
+          {items.map(item => (
+            <div key={item.pizza.id} className="mb-4">
+              <div className="flex gap-4">
+                <img src={item.pizza.img} alt={item.pizza.name} className="w-24 h-24 rounded-2xl object-cover flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-semibold leading-tight">{item.pizza.name}</p>
+                  <p className="text-xs text-[#888] mt-1">{item.sizeLabel}, {item.crustLabel.toLowerCase()}</p>
+                  <button className="text-xs text-[hsl(14,100%,57%)] font-semibold mt-1">Изменить</button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center bg-[#2a2a2a] rounded-xl">
+                  <button
+                    onClick={() => onChangeQty(item.pizza.id, -1)}
+                    className="w-10 h-10 flex items-center justify-center text-white"
+                  >
+                    <Icon name="Minus" size={16} />
+                  </button>
+                  <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
+                  <button
+                    onClick={() => onChangeQty(item.pizza.id, 1)}
+                    className="w-10 h-10 flex items-center justify-center text-white"
+                  >
+                    <Icon name="Plus" size={16} />
+                  </button>
+                </div>
+                <span className="text-lg font-rubik font-bold">{item.totalPrice * item.qty} ₽</span>
+              </div>
+              <div className="border-b border-[#252525] mt-4" />
+            </div>
+          ))}
+
+          {/* Addons in cart */}
+          {addons.map(a => (
+            <div key={a.addon.id} className="flex items-center gap-3 mb-3">
+              <img src={a.addon.img} alt={a.addon.name} className="w-12 h-12 rounded-xl object-cover" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">{a.addon.name}</p>
+                <p className="text-xs text-[#888]">{a.addon.sub}</p>
+              </div>
+              <span className="text-sm font-bold">{a.addon.price * a.qty} ₽</span>
+            </div>
+          ))}
+
+          {/* Suggested addons */}
+          {!isEmpty && (
+            <>
+              <h3 className="text-xl font-rubik font-bold mt-6 mb-4">Добавить к заказу?</h3>
+              <div className="flex gap-3 overflow-x-auto banner-scroll pb-2">
+                {ADDONS.map(addon => (
+                  <div key={addon.id} className="flex-shrink-0 w-40 bg-[#1c1c1c] rounded-3xl border border-[#252525] overflow-hidden">
+                    <div className="h-28 bg-[#222] flex items-center justify-center p-3">
+                      <img src={addon.img} alt={addon.name} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm font-semibold leading-tight">{addon.name}</p>
+                      <p className="text-xs text-[#888] mt-0.5">{addon.sub}</p>
+                      <button
+                        onClick={() => onAddonAdd(addon)}
+                        className="w-full mt-3 py-2 rounded-xl bg-[#2a2a2a] text-sm font-bold text-white hover:bg-[#333] transition-colors active:scale-95"
+                      >
+                        {addon.price} ₽
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Bottom bar */}
+        {!isEmpty && (
+          <div className="px-4 pb-8 pt-2 border-t border-[#1e1e1e]">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-[hsl(14,100%,57%)]">🚶</span>
+              <span className="text-sm text-[#aaa]">Доставим бесплатно</span>
+              <Icon name="Info" size={14} className="text-[#555]" />
+            </div>
+            <button className="w-full py-4 rounded-2xl bg-[hsl(14,100%,57%)] text-white font-rubik font-bold text-lg transition-all active:scale-[0.97] shadow-lg shadow-orange-900/30">
+              Оформить заказ на {total} ₽
+            </button>
+          </div>
+        )}
+
+        {isEmpty && (
+          <div className="px-4 pb-8 pt-2">
+            <button
+              onClick={onClose}
+              className="w-full py-4 rounded-2xl bg-[#2a2a2a] text-white font-rubik font-bold text-base"
+            >
+              Перейти в меню
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const PIZZA_IMG_1 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/da102dc8-ddc7-4af4-a702-3a5139682419.jpg";
 const PIZZA_IMG_2 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/ca8ab024-882c-406d-a9e4-5d2aa2d0e94d.jpg";
 const PIZZA_IMG_3 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/3b64571c-2fb8-4296-a8e3-cfe008554527.jpg";
@@ -201,7 +383,9 @@ const courierPath = [
 export default function Index() {
   const [activeNav, setActiveNav] = useState("home");
   const [activeCategory, setActiveCategory] = useState("Для вас");
-  const [cart, setCart] = useState<number[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartAddons, setCartAddons] = useState<{ addon: Addon; qty: number }[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
   const [courierStep, setCourierStep] = useState(0);
   const [orderStatus, setOrderStatus] = useState(2);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -222,11 +406,46 @@ export default function Index() {
     }
   }, [searchOpen]);
 
-  const addToCart = (id: number) => {
-    setCart(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const addToCart = (id: number, sizeLabel?: string, crustLabel?: string, price?: number) => {
+    setCartItems(prev => {
+      const existing = prev.find(i => i.pizza.id === id);
+      if (existing) {
+        return prev.map(i => i.pizza.id === id ? { ...i, qty: i.qty + 1 } : i);
+      }
+      const p = pizzas.find(p => p.id === id);
+      if (!p) return prev;
+      return [...prev, {
+        pizza: p,
+        qty: 1,
+        sizeLabel: sizeLabel || "25 см",
+        crustLabel: crustLabel || "Традиционное",
+        totalPrice: price || p.price + 70,
+      }];
+    });
   };
 
-  const cartCount = cart.length;
+  const changeCartQty = (pizzaId: number, delta: number) => {
+    setCartItems(prev =>
+      prev.map(i => i.pizza.id === pizzaId ? { ...i, qty: i.qty + delta } : i)
+          .filter(i => i.qty > 0)
+    );
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+    setCartAddons([]);
+  };
+
+  const addAddon = (addon: Addon) => {
+    setCartAddons(prev => {
+      const existing = prev.find(a => a.addon.id === addon.id);
+      if (existing) return prev.map(a => a.addon.id === addon.id ? { ...a, qty: a.qty + 1 } : a);
+      return [...prev, { addon, qty: 1 }];
+    });
+  };
+
+  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0) + cartAddons.reduce((s, a) => s + a.qty, 0);
+  const isInCart = (id: number) => cartItems.some(i => i.pizza.id === id);
 
   const filteredPizzas = searchQuery
     ? pizzas.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -271,7 +490,7 @@ export default function Index() {
 
         <button
           className="w-10 h-10 rounded-2xl bg-[#222] flex items-center justify-center relative"
-          onClick={() => scrollToSection("menu")}
+          onClick={() => setCartOpen(true)}
         >
           <Icon name="ShoppingCart" size={18} />
           {cartCount > 0 && (
@@ -410,12 +629,12 @@ export default function Index() {
                 <button
                   onClick={e => { e.stopPropagation(); setSelectedPizza(pizza); }}
                   className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 active:scale-95 ${
-                    cart.includes(pizza.id)
+                    isInCart(pizza.id)
                       ? "bg-[hsl(14,100%,57%)] text-white"
                       : "bg-[#2a2a2a] text-white hover:bg-[#333]"
                   }`}
                 >
-                  {cart.includes(pizza.id) ? "✓ В корзине" : `от ${pizza.price} ₽`}
+                  {isInCart(pizza.id) ? "✓ В корзине" : `от ${pizza.price} ₽`}
                 </button>
               </div>
             </div>
@@ -667,7 +886,19 @@ export default function Index() {
         <PizzaModal
           pizza={selectedPizza}
           onClose={() => setSelectedPizza(null)}
-          onAdd={(id) => addToCart(id)}
+          onAdd={(id, sizeLabel, crustLabel, price) => addToCart(id, sizeLabel, crustLabel, price)}
+        />
+      )}
+
+      {/* CART SCREEN */}
+      {cartOpen && (
+        <CartScreen
+          items={cartItems}
+          addons={cartAddons}
+          onClose={() => setCartOpen(false)}
+          onChangeQty={changeCartQty}
+          onClear={clearCart}
+          onAddonAdd={addAddon}
         />
       )}
 

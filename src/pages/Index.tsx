@@ -1,6 +1,169 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
+// Pizza modal types
+interface Pizza {
+  id: number;
+  name: string;
+  price: number;
+  img: string;
+  badge: string | null;
+  veg: boolean;
+  desc?: string;
+}
+
+const SIZES = [
+  { label: "20 см", scale: 0.72, priceAdd: 0 },
+  { label: "25 см", scale: 0.84, priceAdd: 70 },
+  { label: "30 см", scale: 0.94, priceAdd: 150 },
+  { label: "35 см", scale: 1.0, priceAdd: 240 },
+];
+
+const CRUSTS = [
+  { label: "Традиционное", emoji: "🥖" },
+  { label: "Тонкое", emoji: "🫓" },
+  { label: "Сырный борт", emoji: "🧀" },
+];
+
+function PizzaModal({ pizza, onClose, onAdd }: { pizza: Pizza; onClose: () => void; onAdd: (id: number) => void }) {
+  const [sizeIdx, setSizeIdx] = useState(1);
+  const [crustIdx, setCrustIdx] = useState(0);
+  const [adding, setAdding] = useState(false);
+
+  const size = SIZES[sizeIdx];
+  const totalPrice = pizza.price + size.priceAdd;
+
+  const handleAdd = () => {
+    setAdding(true);
+    onAdd(pizza.id);
+    setTimeout(() => {
+      setAdding(false);
+      onClose();
+    }, 600);
+  };
+
+  // Close on backdrop click
+  const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  // Prevent body scroll when modal open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center"
+      onClick={handleBackdrop}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Sheet */}
+      <div className="relative w-full max-w-md bg-[#1c1c1c] rounded-t-[2rem] overflow-hidden animate-modal-up">
+
+        {/* Pizza image area — warm beige bg like reference */}
+        <div className="relative bg-[#c8bfb0] flex items-center justify-center overflow-hidden" style={{ height: 320 }}>
+          {/* Close btn */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-[#2a2a2a]/70 backdrop-blur-sm flex items-center justify-center"
+          >
+            <Icon name="X" size={18} className="text-white" />
+          </button>
+
+          {/* Pizza image — animates on size change */}
+          <img
+            src={pizza.img}
+            alt={pizza.name}
+            className="object-contain transition-all duration-500 ease-out drop-shadow-2xl"
+            style={{
+              width: `${size.scale * 100}%`,
+              height: `${size.scale * 100}%`,
+              maxWidth: "90%",
+              maxHeight: "90%",
+            }}
+          />
+
+          {/* "Настроить состав" chip */}
+          <button className="absolute bottom-5 right-5 bg-white/90 backdrop-blur-sm text-[#333] text-sm font-semibold rounded-full px-4 py-2.5 flex items-center gap-2 shadow-lg hover:bg-white transition-colors">
+            <Icon name="Pencil" size={14} className="text-[#555]" />
+            Настроить состав
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-5 pt-5 pb-6">
+          {/* Title & desc */}
+          <h2 className="text-2xl font-rubik font-black text-center mb-1">{pizza.name}</h2>
+          <p className="text-sm text-[#999] text-center leading-relaxed mb-5">
+            {pizza.desc || "Пикантная начинка, увеличенная порция моцареллы, фирменный томатный соус"}
+          </p>
+
+          {/* Size selector */}
+          <div className="bg-[#2a2a2a] rounded-2xl p-1.5 flex items-center mb-3">
+            {SIZES.map((s, i) => (
+              <button
+                key={s.label}
+                onClick={() => setSizeIdx(i)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-250 ${
+                  sizeIdx === i
+                    ? "bg-white text-[#141414] shadow-md"
+                    : "text-[#888] hover:text-[#bbb]"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Crust selector */}
+          <div className="bg-[#2a2a2a] rounded-2xl px-4 py-3 flex items-center justify-between mb-5">
+            <button
+              onClick={() => setCrustIdx(i => Math.max(0, i - 1))}
+              className="text-[#888] hover:text-white transition-colors"
+            >
+              <Icon name="ChevronLeft" size={20} />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{CRUSTS[crustIdx].emoji}</span>
+              <span className="text-sm font-semibold">{CRUSTS[crustIdx].label}</span>
+            </div>
+            <button
+              onClick={() => setCrustIdx(i => Math.min(CRUSTS.length - 1, i + 1))}
+              className="text-[#888] hover:text-white transition-colors"
+            >
+              <Icon name="ChevronRight" size={20} />
+            </button>
+          </div>
+
+          {/* Add button */}
+          <button
+            onClick={handleAdd}
+            className={`w-full py-4 rounded-2xl font-rubik font-black text-lg text-white transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 ${
+              adding ? "bg-green-500" : "bg-[hsl(14,100%,57%)] hover:bg-[hsl(14,100%,50%)]"
+            } shadow-lg shadow-orange-900/30`}
+          >
+            {adding ? (
+              <>
+                <Icon name="Check" size={22} />
+                Добавлено!
+              </>
+            ) : (
+              <>
+                <Icon name="Plus" size={20} />
+                {totalPrice} ₽
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const PIZZA_IMG_1 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/da102dc8-ddc7-4af4-a702-3a5139682419.jpg";
 const PIZZA_IMG_2 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/ca8ab024-882c-406d-a9e4-5d2aa2d0e94d.jpg";
 const PIZZA_IMG_3 = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e96df37ea0d/files/3b64571c-2fb8-4296-a8e3-cfe008554527.jpg";
@@ -10,13 +173,13 @@ const BANNER_IMG = "https://cdn.poehali.dev/projects/e6d6e649-ba1f-4345-ba4a-2e9
 
 const categories = ["Для вас", "Пиццы", "Комбо", "Роллы", "Напитки", "Десерты"];
 
-const pizzas = [
-  { id: 1, name: "Пепперони Фреш", price: 279, img: PIZZA_IMG_1, badge: "ХИТ", veg: false },
-  { id: 2, name: "Четыре сыра", price: 349, img: PIZZA_IMG_2, badge: null, veg: false },
-  { id: 3, name: "Гавайская", price: 359, img: PIZZA_IMG_3, badge: null, veg: false },
-  { id: 4, name: "Двойная пепперони", price: 449, img: PIZZA_IMG_4, badge: "НОВИНКА", veg: false },
-  { id: 5, name: "Маргарита", price: 279, img: PIZZA_IMG_5, badge: null, veg: true },
-  { id: 6, name: "Пепперони классик", price: 349, img: PIZZA_IMG_1, badge: null, veg: false },
+const pizzas: Pizza[] = [
+  { id: 1, name: "Пепперони Фреш", price: 279, img: PIZZA_IMG_1, badge: "ХИТ", veg: false, desc: "Пикантная пепперони, увеличенная порция моцареллы, фирменный томатный соус" },
+  { id: 2, name: "Четыре сыра", price: 349, img: PIZZA_IMG_2, badge: null, veg: false, desc: "Моцарелла, пармезан, дор-блю и чеддер — классика итальянской кухни" },
+  { id: 3, name: "Гавайская", price: 359, img: PIZZA_IMG_3, badge: null, veg: false, desc: "Сочная ветчина, ананас, моцарелла и нежный сливочный соус" },
+  { id: 4, name: "Двойная пепперони", price: 449, img: PIZZA_IMG_4, badge: "НОВИНКА", veg: false, desc: "Двойная порция пепперони, томатный соус, моцарелла — для настоящих любителей" },
+  { id: 5, name: "Маргарита", price: 279, img: PIZZA_IMG_5, badge: null, veg: true, desc: "Классика: томатный соус, моцарелла и свежий базилик" },
+  { id: 6, name: "Пепперони классик", price: 349, img: PIZZA_IMG_1, badge: null, veg: false, desc: "Классическая пепперони на томатной основе с тягучей моцареллой" },
 ];
 
 const reviews = [
@@ -49,6 +212,7 @@ export default function Index() {
   const [orderStatus, setOrderStatus] = useState(2);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPizza, setSelectedPizza] = useState<Pizza | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -228,8 +392,9 @@ export default function Index() {
           {filteredPizzas.map((pizza, i) => (
             <div
               key={pizza.id}
-              className="pizza-card bg-[#1c1c1c] rounded-3xl overflow-hidden border border-[#252525]"
+              className="pizza-card bg-[#1c1c1c] rounded-3xl overflow-hidden border border-[#252525] cursor-pointer"
               style={{ animationDelay: `${i * 0.08}s` }}
+              onClick={() => setSelectedPizza(pizza)}
             >
               <div className="relative aspect-square bg-[#202020] p-3">
                 <img
@@ -249,7 +414,7 @@ export default function Index() {
               <div className="p-3 pt-2">
                 <p className="text-sm font-semibold leading-tight mb-3 min-h-[2.5rem]">{pizza.name}</p>
                 <button
-                  onClick={() => addToCart(pizza.id)}
+                  onClick={e => { e.stopPropagation(); setSelectedPizza(pizza); }}
                   className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 active:scale-95 ${
                     cart.includes(pizza.id)
                       ? "bg-[hsl(14,100%,57%)] text-white"
@@ -502,6 +667,15 @@ export default function Index() {
           Заказать пиццу
         </button>
       </section>
+
+      {/* PIZZA MODAL */}
+      {selectedPizza && (
+        <PizzaModal
+          pizza={selectedPizza}
+          onClose={() => setSelectedPizza(null)}
+          onAdd={(id) => addToCart(id)}
+        />
+      )}
 
       {/* BOTTOM NAV */}
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#0e0e0e]/98 backdrop-blur-md border-t border-[#1e1e1e] z-50">

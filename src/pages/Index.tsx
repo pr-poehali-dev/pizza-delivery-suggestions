@@ -52,108 +52,107 @@ function PizzaModal({ pizza, onClose, onAdd }: { pizza: Pizza; onClose: () => vo
   const pizzaScale = pizzaScales[sizeIdx];
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col max-w-md mx-auto animate-modal-up">
+    <div className="fixed inset-0 z-[100] max-w-md mx-auto animate-modal-up overflow-hidden" style={{ background: "#b8ad9e" }}>
 
-      {/* Full-screen warm beige background — exactly like reference */}
-      <div className="absolute inset-0 bg-[#c4b9ab]" />
+      {/* Scrollable content */}
+      <div className="h-full overflow-y-auto">
 
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-12 left-5 z-20 w-11 h-11 rounded-full bg-[#7a7068]/80 backdrop-blur-sm flex items-center justify-center"
-      >
-        <Icon name="X" size={18} className="text-white" />
-      </button>
+        {/* Pizza image — full width, edge to edge, covers top half */}
+        <div className="relative w-full" style={{ paddingTop: "100%" }}>
+          <img
+            src={pizza.img}
+            alt={pizza.name}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out origin-center"
+            style={{ transform: `scale(${pizzaScale})` }}
+          />
 
-      {/* Pizza image — fills upper ~55% of screen, NO background box */}
-      <div className="relative flex-1 flex items-center justify-center overflow-hidden" style={{ maxHeight: "58%" }}>
-        <img
-          src={pizza.img}
-          alt={pizza.name}
-          className="object-contain transition-all duration-500 ease-out"
-          style={{
-            width: `${pizzaScale * 105}%`,
-            height: `${pizzaScale * 105}%`,
-            maxWidth: "110%",
-            maxHeight: "110%",
-            filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.25))",
-          }}
-        />
+          {/* Close button — top left */}
+          <button
+            onClick={onClose}
+            className="absolute top-10 left-4 z-20 w-11 h-11 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(90,82,74,0.7)" }}
+          >
+            <Icon name="X" size={20} className="text-white" />
+          </button>
 
-        {/* "Настроить состав" chip — bottom right of image area */}
-        <button className="absolute bottom-4 right-5 bg-white/95 text-[#2a2a2a] text-sm font-semibold rounded-full px-4 py-2.5 flex items-center gap-2 shadow-xl">
-          <Icon name="Pencil" size={13} className="text-[#444]" />
-          Настроить состав
-        </button>
-      </div>
-
-      {/* Bottom panel — same warm beige, no border/card */}
-      <div className="relative px-5 pt-2 pb-8" style={{ minHeight: "42%" }}>
-        {/* Title */}
-        <h2 className="text-3xl font-rubik font-black text-center text-[#1a1612] mb-2 mt-1">
-          {pizza.name}
-        </h2>
-        {/* Description */}
-        <p className="text-sm text-[#6b5f52] text-center leading-relaxed mb-5 px-2">
-          {pizza.desc || "Пикантная начинка, увеличенная порция моцареллы, фирменный томатный соус"}
-        </p>
-
-        {/* Size selector — dark pill */}
-        <div className="bg-[#6b5f52]/40 backdrop-blur-sm rounded-2xl p-1.5 flex items-center mb-3">
-          {SIZES.map((s, i) => (
-            <button
-              key={s.label}
-              onClick={() => setSizeIdx(i)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                sizeIdx === i
-                  ? "bg-white text-[#1a1612] shadow-md"
-                  : "text-[#6b5f52] hover:text-[#3a3028]"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+          {/* "Настроить состав" — bottom right over image */}
+          <button
+            className="absolute bottom-5 right-5 flex items-center gap-2 rounded-full px-5 py-3 shadow-lg"
+            style={{ background: "rgba(255,255,255,0.92)" }}
+          >
+            <Icon name="Pencil" size={14} className="text-[#333]" />
+            <span className="text-sm font-semibold text-[#222]">Настроить состав</span>
+          </button>
         </div>
 
-        {/* Crust selector */}
-        <div className="bg-[#6b5f52]/40 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center justify-between mb-5">
-          <button
-            onClick={() => setCrustIdx(i => Math.max(0, i - 1))}
-            className="text-[#6b5f52] hover:text-[#3a3028] transition-colors"
-          >
-            <Icon name="ChevronLeft" size={20} />
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{CRUSTS[crustIdx].emoji}</span>
-            <span className="text-sm font-semibold text-[#2a221c]">{CRUSTS[crustIdx].label}</span>
+        {/* Info block — directly below image, same bg, no cards */}
+        <div className="px-5 pt-5 pb-10">
+          <h2 className="text-[28px] font-rubik font-black text-center mb-2" style={{ color: "#1c1710" }}>
+            {pizza.name}
+          </h2>
+          <p className="text-[15px] text-center leading-relaxed mb-6 px-1" style={{ color: "#6e6256" }}>
+            {pizza.desc || "Пикантная начинка, увеличенная порция моцареллы, фирменный томатный соус"}
+          </p>
+
+          {/* Size selector */}
+          <div className="rounded-[18px] p-[5px] flex items-center mb-3" style={{ background: "rgba(100,90,78,0.35)" }}>
+            {SIZES.map((s, i) => (
+              <button
+                key={s.label}
+                onClick={() => setSizeIdx(i)}
+                className="flex-1 py-3 rounded-[14px] text-sm font-bold transition-all duration-200"
+                style={
+                  sizeIdx === i
+                    ? { background: "#fff", color: "#1c1710", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }
+                    : { color: "#6e6256" }
+                }
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
+
+          {/* Crust selector */}
+          <div className="rounded-[18px] px-4 py-3.5 flex items-center justify-between mb-6" style={{ background: "rgba(100,90,78,0.35)" }}>
+            <button
+              onClick={() => setCrustIdx(i => Math.max(0, i - 1))}
+              style={{ color: "#7a6e60" }}
+            >
+              <Icon name="ChevronLeft" size={22} />
+            </button>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">{CRUSTS[crustIdx].emoji}</span>
+              <span className="text-[15px] font-semibold" style={{ color: "#2e261e" }}>{CRUSTS[crustIdx].label}</span>
+            </div>
+            <button
+              onClick={() => setCrustIdx(i => Math.min(CRUSTS.length - 1, i + 1))}
+              style={{ color: "#7a6e60" }}
+            >
+              <Icon name="ChevronRight" size={22} />
+            </button>
+          </div>
+
+          {/* Add button */}
           <button
-            onClick={() => setCrustIdx(i => Math.min(CRUSTS.length - 1, i + 1))}
-            className="text-[#6b5f52] hover:text-[#3a3028] transition-colors"
+            onClick={handleAdd}
+            className={`w-full py-[18px] rounded-full font-rubik font-black text-[18px] text-white transition-all duration-300 active:scale-[0.97] flex items-center justify-center gap-3 ${
+              adding ? "bg-green-500" : ""
+            }`}
+            style={!adding ? { background: "#ef7b22", boxShadow: "0 6px 24px rgba(220,100,20,0.3)" } : undefined}
           >
-            <Icon name="ChevronRight" size={20} />
+            {adding ? (
+              <>
+                <Icon name="Check" size={22} />
+                Добавлено!
+              </>
+            ) : (
+              <>
+                <Icon name="Plus" size={22} />
+                {totalPrice} ₽
+              </>
+            )}
           </button>
         </div>
-
-        {/* Add button — orange, full width, rounded pill */}
-        <button
-          onClick={handleAdd}
-          className={`w-full py-4 rounded-full font-rubik font-black text-lg text-white transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 ${
-            adding ? "bg-green-500" : "bg-[hsl(20,95%,52%)] hover:bg-[hsl(20,95%,46%)]"
-          } shadow-xl shadow-orange-900/20`}
-        >
-          {adding ? (
-            <>
-              <Icon name="Check" size={22} />
-              Добавлено!
-            </>
-          ) : (
-            <>
-              <Icon name="Plus" size={20} />
-              {totalPrice} ₽
-            </>
-          )}
-        </button>
       </div>
     </div>
   );
